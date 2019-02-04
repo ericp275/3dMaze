@@ -1,0 +1,722 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Model - World - Camera - Clipping - Screen</title>
+  <style>
+    .screen {
+      width: 640px;
+      height: 640px;
+      color: black;
+      text-align: center;
+      line-height: 400px;
+    }
+  </style>
+</head>
+
+<body onload="main()">
+
+
+  <template id="titleTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv"></canvas>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+	  <button onclick="update({name:'rotateL'})"><=</button>
+	  <button onclick="update({name:'step'})">Step</button>
+	  <button onclick="update({name:'rotate'})">=></button>
+	  <label id = "energy"> Energy: 10</label>
+	  <label id = "health"> Health: 10</label>
+    </div>
+  </template>
+
+  <template id="loadTemplate">
+    <div class="screen">
+      <div>Load Template</div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="runTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv"></canvas>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="endTemplate">
+    <div class="screen">
+      <div><h1 id="result">End Template</h1></div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <div id="templateHere"></div>
+
+  <script>
+    //View Code
+
+    var titleTemplate, loadTemplate, runTemplate, endTemplate;
+    var templateHere;
+
+    function updateView() {
+      //Get initial values as needed
+      if (!titleTemplate)
+        titleTemplate = document.getElementById("titleTemplate");
+      if (!loadTemplate)
+        loadTemplate = document.getElementById("loadTemplate");
+      if (!runTemplate)
+        runTemplate = document.getElementById("runTemplate");
+      if (!endTemplate)
+        endTemplate = document.getElementById("endTemplate");
+      if (!templateHere)
+        templateHere = document.getElementById("templateHere");
+
+      var clone;
+      if (state == TITLE_STATE) {
+        clone = titleTemplate.content.cloneNode(true);
+      } else if (state == LOAD_STATE) {
+        var clone = loadTemplate.content.cloneNode(true);
+      } else if (state == RUN_STATE) {
+        var clone = runTemplate.content.cloneNode(true);
+      } else if (state == END_STATE) {
+        var clone = endTemplate.content.cloneNode(true);
+      } else {
+        return console.log("ERROR: Couldn't match state " + state);
+      }
+
+      templateHere.innerHTML = "";
+      templateHere.appendChild(clone);
+    }
+
+  </script>
+
+  <script>
+    //Controls
+
+    function main() {
+      setInterval(timer, 2000 / 20);
+      updateView();
+    }
+
+	var win = false;
+    var updateListeners = [];
+
+    function timer() {
+      update({name:"timer"})
+    }
+
+    function update(event) {
+      for (let i = 0; i < updateListeners.length; i++) {
+        updateListeners[i].eventPump(event);
+      }
+    }
+
+  </script>
+
+
+
+
+  <script>
+    //Model code
+
+
+	
+    //A variable that has my state
+    //JS is dynamcially typed
+    var state;
+    var stateHandler;
+
+
+    //A set of states we can be in
+    var TITLE_STATE = 1;
+    var LOAD_STATE = 2;
+    var RUN_STATE = 3;
+    var END_STATE = 4;
+	var mapSize = 3;
+	var map = [];
+	var path = [];
+	for( i = 0; i < mapSize; i++){
+		var mapx = []
+		for( j = 0; j < mapSize; j++){
+			var mapy = []
+			for( k = 0; k < mapSize; k++){
+				let mapz = 0;
+				mapy.push(mapz);
+			}
+			mapx.push(mapy);
+		}
+		map.push(mapx);
+	}
+	map[0][0][0] = 1;
+	map[mapSize - 1][mapSize - 1][mapSize - 1] = 4;
+	
+	var pathLocation = {x: 0, y: 0, z: 0}
+	var player = {x: 0, y: 0, z: 0};
+	
+    //Set our intital state
+    state = TITLE_STATE;
+
+    var titleStateHandler = {
+      start() {
+        updateListeners.push(this); 
+		this.makeMap()
+		this.zoom = 1.15;
+		this.zoomIncrease = 0;
+		this.energy = 20;
+		this.health = 20;
+		
+		document.onkeydown = checkKey;
+
+		function checkKey(e) {
+
+		e = e || window.event;
+
+		if (e.keyCode == '38') {
+           update({name:'step'});
+		}
+		else if (e.keyCode == '40') {
+        // down arrow
+		}
+		else if (e.keyCode == '37') {
+			update({name:'rotateL'});
+		}
+		else if (e.keyCode == '39') {
+			update({name:'rotate'});
+		}
+
+		}
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = LOAD_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+          case "timer":
+            this.update();
+            break;
+		  case "step":
+		  if( this.hallwayDepth() == 1){
+		  this.rotateForward();
+		  this.zoom = 1.15;
+		  } else{
+            this.zoomIncrease = .05;
+			let energyLabel = document.getElementById("energy");
+			this.energy -= 1;
+			energyLabel.innerHTML = "Energy: " + this.energy;
+			if( this.energy == 0){
+				state = END_STATE;
+				updateListeners.splice(updateListeners.indexOf(this), 1);
+				updateStateHandler();
+			}
+			}
+            break;
+			case "rotate":
+			//console.log(map);
+            map = this.rotateRight();
+			console.log(map);
+			console.log(player);
+            break;
+			case "rotateL":
+			//console.log(map);
+            map = this.rotateLeft();
+			console.log(map);
+			console.log(player);
+            break;
+
+        }
+      },
+      update(){
+        this.canvas = document.getElementById("canv");
+        this.ctx = this.canvas.getContext("2d");
+		//this.miniMap = document.getElementById("minimap");
+        //this.ctx2 = this.miniMap.getContext("2d");
+        this.width = 640;
+        this.height = 640;
+		//this.miniwidth = 70;
+        //this.miniheight = 70;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+		this.wall = 1;
+		if (this.zoomIncrease > .12){
+			this.zoomIncrease = 0;
+			player.z+= 1;
+			this.zoom = 1.15;
+			
+			console.log(player);
+			//player falls
+			if (player.x > 0){
+				while(map[player.x - 1][player.y][player.z] == 1){
+					player.x -= 1;
+					this.zoom = 1.15;
+					let healthLabel = document.getElementById("health");
+					this.health -= 1;
+					healthLabel.innerHTML = "Health: " + this.health;
+					if( this.health == 0){
+					state = END_STATE;
+					updateListeners.splice(updateListeners.indexOf(this), 1);
+					updateStateHandler();
+					}
+					if(player.x == 0){break;}
+				}
+			}
+			if (map[player.x][player.y][player.z] == 4){
+						win = true;
+						state = END_STATE;
+						updateListeners.splice(updateListeners.indexOf(this), 1);
+						updateStateHandler();
+			}
+		} 
+		if (this.zoomIncrease > 0) {
+			this.zoom += this.zoomIncrease;
+			this.zoomIncrease += .015;
+			}
+			
+			
+        let ctx = this.ctx;
+
+        ctx.fillStyle = "silver";
+        ctx.fillRect(0, 0, this.width, this.height);       
+
+		ctx.translate(this.width / 2, this.height / 2);
+                
+        ctx.scale(this.zoom, this.zoom);
+        
+		let jmax = this.hallwayDepth() * 3;
+		
+		//bottom
+		this.wall = 1;
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0 && player.x > 0) {
+				if (map[player.x - 1][player.y][player.z+ j / 3] == 1 || map[player.x - 1][player.y][player.z+ j / 3] == 4){
+				this.wall = 0;
+				} else {
+				this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				ctx.fillStyle = "orange";
+				} else {
+				ctx.fillStyle = "steelblue";
+				}
+				
+			ctx.fillRect( -this.width / (2 * (i + 1)), this.height / (2 * (i + 1)), this.width /  (i + 1), this.height / (2 * (i + .66)) - this.height / (2 * (i + 1)));
+			}
+			//left
+			this.wall = 1;
+			for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0 && player.y > 0) {
+				if (map[player.x][player.y - 1][player.z+ j / 3] == 1 || map[player.x][player.y - 1][player.z+ j / 3] == 4){
+				this.wall = 0;
+				} else {
+				this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				ctx.fillStyle = "orange";
+				} else {
+				ctx.fillStyle = "steelblue";
+				}
+			ctx.fillRect( -this.width / (2 * (i + 1)), -this.height / (2 * (i + 1)), -this.width / (2 * (i + .66)) + this.width / (2 * (i + 1)),2 * this.height / (2 * (i + 1)) );
+			}
+			//top
+			this.wall = 1;
+			for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0  && player.x < mapSize - 1) {
+				if (map[player.x + 1][player.y][player.z+  j / 3] == 1 || map[player.x + 1][player.y][player.z+  j / 3] == 4 ){
+				this.wall = 0;
+				} else {
+				this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				ctx.fillStyle = "orange";
+				} else {
+				ctx.fillStyle = "steelblue";
+				}
+			ctx.fillRect( -this.width / (2 * (i + 1)), -this.height / (2 * (i + 1)), this.width / (i + 1), -this.height / (2 * (i + .66)) + this.height / (2 * (i + 1)));
+		}
+			//right
+		this.wall = 1;
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0  && player.y < mapSize - 1) {
+				if (map[player.x][player.y + 1][player.z+  j / 3] == 1 || map[player.x][player.y + 1][player.z+  j / 3] == 4){
+				this.wall = 0;
+				} else {
+				this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				ctx.fillStyle = "orange";
+				} else {
+				ctx.fillStyle = "steelblue";
+				}
+			ctx.fillRect( this.width / (2 * (i + 1)), -this.height / (2 * (i + 1)), this.width / (2 * (i + .66)) - this.width / (2 * (i + 1)),2 * this.height / (2 * (i + 1)) );
+		}
+		
+		ctx.fillStyle = "peru";
+		jmax -= 1;
+		ctx.fillRect( -this.width / (2 * (jmax / 3 + 1)), -this.height / (2 * (jmax / 3 + 1)), this.width /  (jmax / 3 + 1), this.height /  (jmax / 3 + 1));
+		if( map[player.x][player.y][player.z - 1 + this.hallwayDepth()] == 4) {
+			ctx.fillStyle = "green";
+			ctx.fillRect( -this.width / (2 * (jmax / 3 + 1)) + 50, -this.height / (2 * (jmax / 3 + 1)) + 50, this.width /  (jmax / 3 + 1) - 100, this.height /  (jmax / 3 + 1) - 100);
+		}
+		
+		ctx.fillStyle = "black";
+		ctx.fillRect((this.width / 2 - 127) / this.zoom, (this.height / 2 - 127) / this.zoom, 127, 127);
+		for(i = 0; i < mapSize; i++){
+			for(j = 0; j < mapSize; j++){
+				if( map[player.x][i][j] == 1 || map[player.x][i][j] == 4) {
+				ctx.fillStyle = "steelblue";
+				} else {
+				ctx.fillStyle = "orange";
+				}
+				let squareSize = 116 / mapSize
+				ctx.fillRect((this.width / 2 - 120 + squareSize * j) / this.zoom, (this.height / 2 - 120  + squareSize * i) / this.zoom, squareSize, squareSize);
+			}
+		}
+		let squareSize = 116 / mapSize;
+		ctx.fillStyle = "red";
+		ctx.fillRect((this.width / 2 - 120 + squareSize * player.z) / this.zoom + 8, (this.height / 2 - 120  + squareSize * player.y) / this.zoom + 8, squareSize - 20, squareSize - 20);
+		
+		ctx.save();
+		//ctx2.save();
+		},
+      
+	  
+	  hallwayDepth(){
+		var depth = 1; 
+		while(true){
+			if(player.z+ depth > mapSize){break;}
+			if(map[player.x][player.y][player.z+ depth] == 1 || map[player.x][player.y][player.z+ depth] == 4){
+				depth += 1;
+			} else {
+				break;
+			}
+		}
+		return depth;
+	  },
+	  
+	  rotateLeft(){
+		
+		newMap = [];
+		//console.log(map);
+		newposition = {x: player.x, y: player.z, z: mapSize - 1 - player.y};
+		player = newposition;
+		
+		
+		for( i = 0; i < mapSize; i++){
+		var mapx = []
+		for( j = 0; j < mapSize; j++){
+			var mapy = []
+			for( k = 0; k < mapSize; k++){
+			
+				mapy.push(map[i][mapSize - 1 - k][j]);
+			}
+			mapx.push(mapy);
+		}
+		newMap.push(mapx);
+	}
+		return newMap;
+				
+	  },
+	  rotateRight(){
+	  
+		newMap = [];
+		//console.log(map);
+		newposition = {x: player.x, y: mapSize - 1 - player.z, z: player.y};
+		player = newposition;
+		
+		
+		for( i = 0; i < mapSize; i++){
+		var mapx = []
+		for( j = 0; j < mapSize; j++){
+			var mapy = []
+			for( k = 0; k < mapSize; k++){
+			
+				mapy.push(map[i][k][mapSize - 1 - j]);
+			}
+			mapx.push(mapy);
+		}
+		newMap.push(mapx);
+	}
+		return newMap;
+				
+	  },
+	  rotateForward(){
+	 
+		newMap = [];
+		newposition = {x: mapSize - 1 - player.z, y: player.y, z: player.x};
+		player = newposition;
+		
+		
+		for(i = 0; i < mapSize; i++){
+			newMapx = []
+			for(j = 0; j < mapSize; j++){
+				newMapy = []
+				for(k = 0; k < mapSize; k++){
+					newMapy.push(map[k][j][mapSize - 1 - i]);
+					
+				}
+				newMapx.push(newMapy);
+			}
+			newMap.push(newMapx);
+		}
+		map = newMap;
+		console.log(map);
+		console.log(player);
+	  },
+	  
+	  makeMap(){
+		while(true){
+			if(pathLocation.x > mapSize - 2 && pathLocation.y > mapSize - 2 && pathLocation.z > mapSize - 3){break;}
+			if(pathLocation.x > mapSize - 2 && pathLocation.z > mapSize - 2 && pathLocation.y > mapSize - 3){break;}
+			if(pathLocation.z > mapSize - 2 && pathLocation.y > mapSize - 2 && pathLocation.x > mapSize - 3){break;}
+			console.log(map);
+			this.nextStep();
+			console.log(pathLocation);
+		}
+		console.log(map);
+		console.log(player);
+	  },
+	  nextStep(){
+	    var possible = this.possiblePaths(pathLocation, false);
+		if (possible.length == 0){
+			pathLocation = path[Math.floor(Math.random() * path.length)];
+			console.log("new location:");
+			console.log(pathLocation);
+			this.cleanMap();
+			possible = this.possiblePaths(pathLocation, true);
+		}
+		let pointsLength = possible.length;
+		while(true){
+			let choice = Math.floor(Math.random() * pointsLength);
+				for(i = 0; i < choice; i++){
+					if (map[possible[i].x][possible[i].y][possible[i].z] == 0){
+						map[possible[i].x][possible[i].y][possible[i].z] = 2;
+					}
+				}
+			map[possible[choice].x][possible[choice].y][possible[choice].z] = 1;
+			pathLocation = {x: possible[choice].x, y: possible[choice].y, z: possible[choice].z};
+			path.push(pathLocation);
+			//console.log(possible);
+				for(i = choice + 1; i < possible.length; i++){
+					//console.log(i);
+					if (map[possible[i].x][possible[i].y][possible[i].z] == 0){
+						map[possible[i].x][possible[i].y][possible[i].z] = 2;
+					}
+				}
+			break;
+		}
+		},
+	  possiblePaths(startSpot, newPath){
+	  var points = []
+		if(startSpot.x > 0){
+			let spot = { x: startSpot.x - 1, y: startSpot.y, z: startSpot.z};
+			points.push(spot);
+		}
+		if(startSpot.y > 0){
+			let spot = { x: startSpot.x, y: startSpot.y - 1, z: startSpot.z};
+			points.push(spot);
+		}
+		if(startSpot.z > 0){
+			let spot = { x: startSpot.x, y: startSpot.y, z: startSpot.z - 1};
+			points.push(spot);
+		}
+		if(startSpot.x < mapSize - 1){
+			let spot = { x: startSpot.x + 1, y: startSpot.y, z: startSpot.z};
+			points.push(spot);
+		}
+		if(startSpot.y < mapSize - 1){
+			let spot = { x: startSpot.x, y: startSpot.y + 1, z: startSpot.z};
+			points.push(spot);
+		}
+		if(startSpot.z < mapSize - 1){
+			let spot = { x: startSpot.x, y: startSpot.y, z: startSpot.z + 1};
+			points.push(spot);
+		}
+		goodPoints = [];
+		for (i = 0; i < points.length; i++){
+			if (map[points[i].x][points[i].y][points[i].z] == 0){
+				goodPoints.push(points[i]);
+				}
+				else if (map[points[i].x][points[i].y][points[i].z] == 1){
+				}
+			if (map[points[i].x][points[i].y][points[i].z] == 2 && newPath){
+				goodPoints.push(points[i]);
+			}
+		}
+		return goodPoints;
+	  },
+	  
+	  cleanMap(){
+		for( i = 0; i < mapSize; i++){
+		for( j = 0; j < mapSize; j++){
+			for( k = 0; k < mapSize; k++){
+				if( map[i][j][k] != 2){continue;}
+				startSpot = {x: i, y: j, z: k};
+				var points = []
+			if(startSpot.x > 0){
+			let spot = { x: startSpot.x - 1, y: startSpot.y, z: startSpot.z};
+			points.push(spot);
+			}
+			if(startSpot.y > 0){
+			let spot = { x: startSpot.x, y: startSpot.y - 1, z: startSpot.z};
+			points.push(spot);
+			}
+			if(startSpot.z > 0){
+			let spot = { x: startSpot.x, y: startSpot.y, z: startSpot.z - 1};
+			points.push(spot);
+			}
+			if(startSpot.x < mapSize - 1){
+			let spot = { x: startSpot.x + 1, y: startSpot.y, z: startSpot.z};
+			points.push(spot);
+			}
+			if(startSpot.y < mapSize - 1){
+			let spot = { x: startSpot.x, y: startSpot.y + 1, z: startSpot.z};
+			points.push(spot);
+			}
+			if(startSpot.z < mapSize - 1){
+			let spot = { x: startSpot.x, y: startSpot.y, z: startSpot.z + 1};
+			points.push(spot);
+			}
+			pathPoints = [];
+			for (i = 0; i < points.length; i++){
+			if (map[points[i].x][points[i].y][points[i].z] == 1){
+				pathPoints.push(points[i]);
+				}
+			}
+			if(pathPoints.length > 1){
+				map[i][j][k] = 3;
+			}
+			}
+			
+		}
+		}
+	  }
+	 };
+    
+
+    var loadStateHandler = {
+      start() {
+        updateListeners.push(this);
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = RUN_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+    var runStateHandler = {
+      start() {
+        updateListeners.push(this);
+		this.zoom = 100;
+		this.dir = 1;
+      },
+      eventPump(event) {
+        switch (event.name) {
+		  case "next":
+            state = END_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+		  case "timer":
+			this.update();
+			break;
+        }
+      },
+	  update(){
+        this.canvas = document.getElementById("canv");
+        this.ctx = this.canvas.getContext("2d");
+        this.width = 640;
+        this.height = 640;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+		//if (this.zoom > 120 || this.zoom < 80) {this.dir *= -1;}
+		//this.zoom += this.dir;
+			
+        let ctx = this.ctx;
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, this.width, this.height);       
+
+
+		ctx.translate(this.width / 2, this.height / 2);
+                
+        ctx.scale(this.zoom, this.zoom);
+
+        ctx.fillStyle = "darkgreen";
+        ctx.fillRect(0, 1, 1, 1)
+		ctx.fillStyle = "orange";
+        ctx.fillRect(2, 0, 1, 1)
+		ctx.fillStyle = "white";
+        ctx.fillRect(0, 2, 1, 1)
+        ctx.save()
+      }
+    };
+
+    var endStateHandler = {
+      start() {
+	  map = []
+        updateListeners.push(this);
+		let resultMessage = document.getElementById("result");
+		if(win){
+			resultMessage.innerHTML = "You Won!";
+			} else {
+				resultMessage.innerHTML = "You died :(";
+			}
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = TITLE_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+
+
+
+
+    updateStateHandler();
+
+    function updateStateHandler() {
+      if (state == TITLE_STATE) {
+        stateHandler = titleStateHandler;
+      } else if (state == LOAD_STATE) {
+        stateHandler = loadStateHandler;
+      } else if (state == RUN_STATE) {
+        stateHandler = runStateHandler;
+      } else if (state == END_STATE) {
+        stateHandler = endStateHandler;
+      }
+
+
+      updateView();
+      stateHandler.start();
+    }
+  </script>
+</body>
+
+</html>
