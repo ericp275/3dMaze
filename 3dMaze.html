@@ -1,0 +1,1001 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Model - World - Camera - Clipping - Screen</title>
+  <style>
+	h2 {
+		text-align: center;
+	}
+    .screen {
+      width: 640px;
+      height: 640px;
+      color: black;
+      text-align: center;
+      line-height: 400px;
+    }
+  </style>
+</head>
+
+<body onload="main()" onkeyup="keyUp(event)">
+
+
+  <template id="runTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv"></canvas>
+    </div>
+	<h2 id = "floor"> Energy: 10</h2>
+    <div>
+      <button onclick="update({name:'next'})">New Game</button>
+	  <button onclick="update({name:'rotateL'})"><=</button>
+	  <button onclick="update({name:'step'})">Step</button>
+	  <button onclick="update({name:'rotate'})">=></button>
+	  <input type="range" min="1" max="6" value="4" oninput="changeQuality(event)" id = "gfxSlider">
+	  <label id = "energy"> Energy: 10</label>
+	  <label id = "health"> Health: 10</label>
+    </div>
+  </template>
+
+  <template id="loadTemplate">
+    <div class="screen">
+      <div>Load Template</div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="titleTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv" onmouseup="mouseup(event)"></canvas>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="endTemplate">
+    <div class="screen">
+      <div><h1 id="result">End Template</h1></div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <div id="templateHere"></div>
+
+  <script>
+    //View Code
+
+    var titleTemplate, loadTemplate, runTemplate, endTemplate;
+    var templateHere;
+
+    function updateView() {
+      //Get initial values as needed
+      if (!titleTemplate)
+        titleTemplate = document.getElementById("titleTemplate");
+      if (!loadTemplate)
+        loadTemplate = document.getElementById("loadTemplate");
+      if (!runTemplate)
+        runTemplate = document.getElementById("runTemplate");
+      if (!endTemplate)
+        endTemplate = document.getElementById("endTemplate");
+      if (!templateHere)
+        templateHere = document.getElementById("templateHere");
+
+      var clone;
+      if (state == TITLE_STATE) {
+        clone = titleTemplate.content.cloneNode(true);
+      } else if (state == LOAD_STATE) {
+        var clone = loadTemplate.content.cloneNode(true);
+      } else if (state == RUN_STATE) {
+        var clone = runTemplate.content.cloneNode(true);
+      } else if (state == END_STATE) {
+        var clone = endTemplate.content.cloneNode(true);
+      } else {
+        return console.log("ERROR: Couldn't match state " + state);
+      }
+
+      templateHere.innerHTML = "";
+      templateHere.appendChild(clone);
+    }
+
+  </script>
+
+  <script>
+    //Controls
+
+    function main() {
+      setInterval(timer, 2000 / 20);
+      updateView();
+    }
+
+	var win = false;
+    var updateListeners = [];
+
+    function timer() {
+      update({name:"timer"})
+    }
+
+    function update(event) {
+      for (let i = 0; i < updateListeners.length; i++) {
+        updateListeners[i].eventPump(event);
+      }
+    }
+	
+	function keyUp(e) {
+		console.log("keyup");
+
+		if (e.keyCode == '38' || e.key == 'w' ) {
+           update({name:'step'});
+		}
+		else if (e.keyCode == '37'  || e.key == 'a' ) {
+			update({name:'rotateL'});
+		}
+		else if (e.keyCode == '39'  || e.key == 'd' ) {
+			update({name:'rotate'});
+		}
+
+	}
+		
+	function changeQuality(e) {
+		gfxQuality =  e.path[0].valueAsNumber;
+		document.getElementById("gfxSlider").value = gfxQuality;
+		console.log(e);
+		console.log(e.path[0]);
+		console.log(e.path[0].valueAsNumber);
+	}
+	
+	function mouseup(e){
+      console.log(e.clientX)
+	  console.log(e.clientY)
+	  //click on mapSize slider
+	  if (e.clientX > 175 && e.clientX < 540 && e.clientY > 510 && e.clientY < 550){
+		mapSize = Math.floor((e.clientX - 175) / 63) + 3;
+		console.log(mapSize);
+	  }
+    }
+
+  </script>
+
+
+
+
+  <script>
+    //Model code
+
+
+	
+    //A variable that has my state
+    //JS is dynamcially typed
+    var state;
+    var stateHandler;
+
+
+    //A set of states we can be in
+    var TITLE_STATE = 1;
+    var LOAD_STATE = 2;
+    var RUN_STATE = 3;
+    var END_STATE = 4;
+	var gfxQuality = 3;
+	var mapSize = 3;
+	var map = [];
+	var mapCopy = [];
+	var path = [];
+	var orientation = {forward: 2, base: 3}
+	
+	var pathLocation = {z: 0, y: 0, x: 0}
+	var player = {z: 0, y: 0, x: 0};
+	var playerOnMap = player;
+	
+	var directionMatrix = [];
+	directionMatrix.push([1,2,4,5,1]);
+	directionMatrix.push([0,5,3,2,0]);
+	directionMatrix.push([0,1,3,4,0]);
+	directionMatrix.push([2,1,5,4,2]);
+	directionMatrix.push([0,2,3,5,0]);
+	directionMatrix.push([0,4,3,1,0]);
+	
+	let floorColor = "#FF6306";
+	
+    //Set our intital state
+    state = TITLE_STATE;
+
+    var runStateHandler = {
+      start() {
+        updateListeners.push(this); 
+		this.makeMap()
+		this.zoom = 1.15;
+		this.zoomIncrease = 0;
+		this.energy = Math.floor(1.5 * mapSize * mapSize);
+		this.health = 2 * mapSize;
+		let energyLabel = document.getElementById("energy");
+		energyLabel.innerHTML = "Energy: " + this.energy;
+		let healthLabel = document.getElementById("health");
+		healthLabel.innerHTML = "Health: " + this.health;
+      },
+	  
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = LOAD_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+          case "timer":
+            this.update();
+            break;
+		  case "step":
+		  if( this.hallwayDepth() == 1){
+		  this.rotateForward();
+		  this.zoom = 1.15;
+		  } else{
+            this.zoomIncrease = .05;
+			let energyLabel = document.getElementById("energy");
+			this.energy -= 1;
+			energyLabel.innerHTML = "Energy: " + this.energy;
+			if( this.energy == 0){
+				state = END_STATE;
+				updateListeners.splice(updateListeners.indexOf(this), 1);
+				updateStateHandler();
+			}
+			}
+            break;
+			case "rotate":
+			//console.log(map);
+            map = this.rotateRight();
+			//console.log(map);
+			//console.log(player);
+            break;
+			case "rotateL":
+			//console.log(map);
+            map = this.rotateLeft();
+			//console.log(map);
+			//console.log(player);
+            break;
+
+        }
+      },
+      update(){
+        this.canvas = document.getElementById("canv");
+        this.ctx = this.canvas.getContext("2d");
+        this.width = 640;
+        this.height = 640;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+		this.xDir = 0;
+		this.yDir = 0;
+		document.getElementById("floor").innerHTML = "Floor " + (playerOnMap.z + 1);
+		
+		this.wall = 1;
+		if (this.zoomIncrease > .12){
+			this.zoomIncrease = 0;
+			player.x += 1;
+			switch(orientation.forward){
+				case 0:
+					playerOnMap.z += 1;
+					break;
+				case 1:
+					playerOnMap.y += 1;
+					break
+				case 2:
+					playerOnMap.x += 1;
+					break;
+				case 3:
+					playerOnMap.z -= 1;
+					break;
+				case 4:
+					playerOnMap.y -= 1;
+					break
+				case 5:
+					playerOnMap.x -= 1;
+					break;
+			}
+			this.zoom = 1.15;
+			
+			//console.log(player);
+			console.log(playerOnMap);
+			//player falls
+			if (player.z > 0){
+				while(map[player.z- 1][player.y][player.x] == 1 ||
+						map[player.z- 1][player.y][player.x] == 4){
+					player.z -= 1;
+					switch(orientation.base){
+				case 0:
+					playerOnMap.z += 1;
+					break;
+				case 1:
+					playerOnMap.y += 1;
+					break
+				case 2:
+					playerOnMap.x += 1;
+					break;
+				case 3:
+					playerOnMap.z -= 1;
+					break;
+				case 4:
+					playerOnMap.y -= 1;
+					break
+				case 5:
+					playerOnMap.x -= 1;
+					break;
+			}
+					this.zoom = 1.15;
+					let healthLabel = document.getElementById("health");
+					this.health -= 1;
+					healthLabel.innerHTML = "Health: " + this.health;
+					if( this.health == 0){
+					state = END_STATE;
+					updateListeners.splice(updateListeners.indexOf(this), 1);
+					updateStateHandler();
+					}
+					if(player.z == 0){break;}
+				}
+			}
+			if (map[player.z][player.y][player.x] == 4){
+						win = true;
+						state = END_STATE;
+						updateListeners.splice(updateListeners.indexOf(this), 1);
+						updateStateHandler();
+			}
+		} 
+		if (this.zoomIncrease > 0) {
+			this.zoom += this.zoomIncrease;
+			this.zoomIncrease += .015;
+			}
+			
+			
+        let ctx = this.ctx;
+
+        ctx.fillStyle = "silver";
+        ctx.fillRect(0, 0, this.width, this.height); 
+		ctx.scale(this.width, this.height)
+		ctx.translate(1 / 2, 1 / 2);
+		ctx.save()
+		{
+                
+        ctx.scale(this.zoom, this.zoom);
+        
+		let jmax = this.hallwayDepth() * 3;
+		
+		//bottom
+		if ( orientation.base == 3){
+			ctx.fillStyle = floorColor;
+		} else {
+			ctx.fillStyle = "#FF9800";
+		}
+		ctx.fillRect( -.5, 0, 1, 1);
+		ctx.fillStyle = "steelblue";
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0 && player.z> 0) {
+				if (map[player.z- 1][player.y][player.x+ j / 3] == 1 || map[player.z- 1][player.y][player.x+ j / 3] == 4){
+					for (i = j / 3; i < j / 3 + .9; i += 1/3){
+						let xStart = -1 / (2 * (i + 1));
+						let yStart = 1 / (2 * (i + 1));
+						let blockWidth =  1 /  (i + 1);
+						let blockHeight = 1 / ( 6 * i * i + 10 * i + 4)
+			
+						//ctx.fillRect( xStart, yStart, blockWidth, blockHeight);
+						let parts = gfxQuality;
+						for(part = 0; part < parts; part++){
+							ctx.fillRect( xStart - blockHeight * part / parts, yStart + blockHeight * part / parts, 
+							blockWidth + 2 * blockHeight * part / parts, blockHeight / parts);
+						}
+					}
+				}
+			}
+			
+		}
+		
+		//top
+		if ( orientation.base == 0){
+			ctx.fillStyle = floorColor;
+		} else {
+			ctx.fillStyle = "#FF9800";
+		}
+		ctx.fillRect( -.5, 0, 1, -1);
+		ctx.fillStyle = "steelblue";
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0  && player.z< mapSize - 1) {
+				if (map[player.z+ 1][player.y][player.x+  j / 3] == 1 || map[player.z+ 1][player.y][player.x+  j / 3] == 4 ){
+					for (i = j / 3; i < j / 3 + .9; i += 1/3){
+						let xStart = -1 / (2 * (i + 1));
+						let yStart = -1 / (2 * (i + 1));
+						let blockWidth =  1 /  (i + 1);
+						let blockHeight = -1 / ( 6 * i * i + 10 * i + 4)
+						
+						//ctx.fillRect( xStart, yStart, blockWidth, blockHeight);
+						
+						let parts = gfxQuality;
+						for(part = 0; part < parts; part++){
+							ctx.fillRect( xStart + blockHeight * part / parts, yStart + blockHeight * part / parts, 
+							blockWidth - 2 * blockHeight * part / parts, blockHeight / parts);
+						}
+					}
+				} 
+			}
+		}
+		
+		//left
+		this.wall = 1;
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0 && player.y > 0) {
+				if (map[player.z][player.y - 1][player.x+ j / 3] == 1 || map[player.z][player.y - 1][player.x+ j / 3] == 4){
+					this.wall = 0;
+				} else {
+					this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				if ( orientation.base == 1  && orientation.forward == 2 ||
+					orientation.base == 2  && orientation.forward == 4 ||
+					orientation.base == 4  && orientation.forward == 5 ||
+					orientation.base == 5  && orientation.forward == 1 ){
+						ctx.fillStyle = floorColor;
+				} else {
+				ctx.fillStyle = "orange";
+				}
+			} else {
+				ctx.fillStyle = "steelblue";
+			}
+			let xStart = -1 / (2 * (i + 1));
+			let yStart = -1 / (2 * (i + 1));
+			let blockWidth =  -1 / ( 6 * i * i + 10 * i + 4);
+			let blockHeight =  1 /  (i + 1);
+						
+			//ctx.fillRect( xStart, yStart, blockWidth, blockHeight);
+						
+			let parts = gfxQuality
+			for(part = 0; part < parts; part++){
+				ctx.fillRect( xStart + blockWidth * part / parts, yStart + blockWidth * part / parts, 
+				blockWidth / parts, blockHeight - 2 * blockWidth * part / parts);
+			}
+			//ctx.fillRect( -1 / (2 * (i + 1)), -1 / (2 * (i + 1)), -1 / (2 * (i + .66)) + 1 / (2 * (i + 1)),2 * 1 / (2 * (i + 1)) );
+		}
+			
+			//right
+		this.wall = 1;
+		for(j = 0; j < jmax; j += 1){
+			if( j % 3 == 0  && player.y < mapSize - 1) {
+				if (map[player.z][player.y + 1][player.x+  j / 3] == 1 || map[player.z][player.y + 1][player.x+  j / 3] == 4){
+				this.wall = 0;
+				} else {
+				this.wall = 1;
+				}
+			}
+			let i = j / 3;
+			if( this.wall == 1) {
+				if ( orientation.base == 2  && orientation.forward == 1 ||
+					orientation.base == 4  && orientation.forward == 2 ||
+					orientation.base == 5  && orientation.forward == 4 ||
+					orientation.base == 1  && orientation.forward == 5 ){
+					ctx.fillStyle = floorColor;
+				} else {
+				ctx.fillStyle = "orange";
+				}
+			} else {
+				ctx.fillStyle = "steelblue";
+			}
+			let xStart = 1 / (2 * (i + 1));
+				let yStart = -1 / (2 * (i + 1));
+				let blockWidth =  1 / ( 6 * i * i + 10 * i + 4);
+				let blockHeight =  1 /  (i + 1);
+						
+			//ctx.fillRect( xStart, yStart, blockWidth, blockHeight);
+						
+				let parts = gfxQuality
+				for(part = 0; part < parts; part++){
+					ctx.fillRect( xStart + blockWidth * part / parts, yStart - blockWidth * part / parts, 
+					blockWidth / parts, blockHeight + 2 * blockWidth * part / parts);
+				}
+			//ctx.fillRect( 1 / (2 * (i + 1)), -1 / (2 * (i + 1)), 1 / (2 * (i + .66)) -1 / (2 * (i + 1)), 2  / (2 * (i + 1)));
+		}
+		if (orientation.forward == 3){
+			ctx.fillStyle = floorColor;
+		} else {
+			ctx.fillStyle = "peru";
+		}
+		jmax -= 1;
+		ctx.fillRect( -1 / (2 * (jmax / 3 + 1)), -1 / (2 * (jmax / 3 + 1)), 1 /  (jmax / 3 + 1), 1 /  (jmax / 3 + 1));
+		if( map[player.z][player.y][player.x - 1 + this.hallwayDepth()] == 4) {
+			ctx.fillStyle = "green";
+			ctx.fillRect( -.4 / (2 * (jmax / 3 + 1)), -.4 / (2 * (jmax / 3 + 1)), 1 /  (jmax / 3 + 1) * .4, 1 /  (jmax / 3 + 1) * .4);
+		}
+		}
+		ctx.restore();
+		ctx.fillStyle = "black";
+		ctx.fillRect(.27, .27, .23, .23);
+		;
+		let squareSize = .22 / mapSize;
+		for(i = 0; i < mapSize; i++){
+			for(j = 0; j < mapSize; j++){
+				if( mapCopy[playerOnMap.z][i][j] == 1 || mapCopy[playerOnMap.z][i][j] == 4) {
+				ctx.fillStyle = "steelblue";
+				} else {
+				ctx.fillStyle = "orange";
+				}
+				ctx.fillRect((.28 + squareSize * i), (.28 + squareSize * (mapSize - 1 - j)), squareSize, squareSize);
+				if(mapCopy[playerOnMap.z][i][j] == 4) {
+				ctx.fillStyle = "green";
+				ctx.fillRect(.28 + squareSize * (i + .25), .28 + squareSize * ( mapSize - .75 - j), squareSize * .5, squareSize * .5);
+				}
+			}
+		}
+		switch(orientation.forward){
+			case 1:
+				this.xDir = .1 * (16 / mapSize);
+				this.yDir = 0;
+				break;
+			case 3:
+				this.xDir = 0;
+				this.yDir = 0;
+				break;
+			case 5:
+				this.xDir = 0;
+				this.yDir = .1 * (16 / mapSize);
+				break;
+			case 4:
+				this.xDir = -.1 * (16 / mapSize);
+				this.yDir = 0;
+				break;
+			case 0:
+				this.xDir = 0;
+				this.yDir = 0;
+				break;
+			case 2:
+				this.xDir = 0;
+				this.yDir = -.1 * (16 / mapSize);
+				break;
+		}
+		ctx.fillStyle = "red";
+		ctx.fillRect(.28 + squareSize * (playerOnMap.y + .25) + this.zoomIncrease * this.xDir, 
+						.28 + squareSize * ( mapSize - .75 - playerOnMap.x) + this.zoomIncrease * this.yDir, squareSize * .5, squareSize * .5);
+		
+		ctx.save();
+		},
+      
+	  
+	  hallwayDepth(){
+		var depth = 1; 
+		while(true){
+			if(player.x + depth > mapSize){break;}
+			if(map[player.z][player.y][player.x + depth] == 1 || map[player.z][player.y][player.x + depth] == 4){
+				depth += 1;
+			} else {
+				break;
+			}
+		}
+		return depth;
+	  },
+	  
+	  rotateLeft(){
+		
+		newMap = [];
+		newMapCopy = [];
+		//console.log(map);
+		newposition = {z: player.z, y: player.x, x: mapSize - 1 - player.y};
+		player = newposition;
+		//newposition = {z: player.z, y: playerOnMap.x, x: mapSize - 1 - playerOnMap.y};
+		//playerOnMap = newposition;
+		
+		for( i = 0; i < mapSize; i++){
+		var mapx = []
+		//var mapcx = []
+		for( j = 0; j < mapSize; j++){
+			var mapy = []
+			//var mapcy = []
+			for( k = 0; k < mapSize; k++){
+			
+				mapy.push(map[i][mapSize - 1 - k][j]);
+				//mapcy.push(mapCopy[i][mapSize - 1 - k][j]);
+				
+			}
+			mapx.push(mapy);
+			//mapcx.push(mapcy);
+		}
+		newMap.push(mapx);
+		//newMapCopy.push(mapcx);
+		}
+		//mapCopy = newMapCopy;
+		this.changeOrientation(false)
+		console.log(orientation);
+		return newMap;
+				
+	  },
+	  rotateRight(){
+	  
+		newMap = [];
+		newMapCopy = []
+		//console.log(map);
+		newposition = {z: player.z, y: mapSize - 1 - player.x, x: player.y};
+		player = newposition;
+		//newposition = {z: player.z, y: mapSize - 1 - playerOnMap.x, x: playerOnMap.y};
+		//playerOnMap = newposition;
+		
+		
+		for( i = 0; i < mapSize; i++){
+		var mapx = []
+		//var mapcx = []
+		for( j = 0; j < mapSize; j++){
+			var mapy = []
+			//var mapcy = []
+			for( k = 0; k < mapSize; k++){
+			
+				mapy.push(map[i][k][mapSize - 1 - j]);
+				//mapcy.push(mapCopy[i][k][mapSize - 1 - j]);
+			}
+			mapx.push(mapy);
+			//mapcx.push(mapcy);
+		}
+		newMap.push(mapx);
+		//newMapCopy.push(mapcx);
+		}
+		//mapCopy = newMapCopy;
+		this.changeOrientation(true);
+		console.log(orientation);
+		return newMap;
+				
+	  },
+	  rotateForward(){
+	 
+		newMap = [];
+		newposition = {z: mapSize - 1 - player.x, y: player.y, x: player.z};
+		player = newposition;
+		
+		
+		for(i = 0; i < mapSize; i++){
+			newMapx = []
+			for(j = 0; j < mapSize; j++){
+				newMapy = []
+				for(k = 0; k < mapSize; k++){
+					newMapy.push(map[k][j][mapSize - 1 - i]);
+					
+				}
+				newMapx.push(newMapy);
+			}
+			newMap.push(newMapx);
+		}
+		map = newMap;
+		let temp = orientation.forward;
+		orientation.forward = (orientation.base + 3) % 6;
+		orientation.base = temp;
+		//console.log(map);
+		//console.log(player);
+		console.log(orientation);
+	  },
+	  
+	  makeMap(){
+		//reset variables;
+		map = []
+		pathLocation = {z: 0, y: 0, x: 0}
+		player = {z: 0, y: 0, x: 0};
+		playerOnMap = {z: 0, y: 0, x: 0};
+		orientation = {forward: 2, base: 3};
+		
+		for( i = 0; i < mapSize; i++){
+			var mapx = []
+			for( j = 0; j < mapSize; j++){
+				var mapy = []
+				for( k = 0; k < mapSize; k++){
+					let mapz = 0;
+					mapy.push(mapz);
+				}
+			mapx.push(mapy);
+			}
+		map.push(mapx);
+		}
+		map[0][0][0] = 1;
+		map[mapSize - 1][mapSize - 1][mapSize - 1] = 4;
+		while(true){
+			if(pathLocation.z > mapSize - 2 && pathLocation.y > mapSize - 2 && pathLocation.x > mapSize - 3){break;}
+			if(pathLocation.z > mapSize - 2 && pathLocation.x > mapSize - 2 && pathLocation.y > mapSize - 3){break;}
+			if(pathLocation.x > mapSize - 2 && pathLocation.y > mapSize - 2 && pathLocation.z > mapSize - 3){break;}
+			//console.log(map);
+			this.nextStep();
+			console.log(pathLocation);
+		}
+		console.log(map);
+		pathLocation = path[Math.floor(Math.random() * path.length)];
+		console.log("secondPath");
+		console.log(pathLocation);
+		this.nextStep2()
+		mapCopy = map;
+		console.log(player);
+	  },
+	  nextStep(){
+	    var possible = this.possiblePaths(pathLocation, false);
+		while (possible.length == 0){
+			pathLocation = path[Math.floor(Math.random() * path.length)];
+			console.log("new location:");
+			//console.log(pathLocation);
+			possible = this.possiblePaths(pathLocation, true);
+			if( map[pathLocation.z][pathLocation.y][pathLocation.x] == 3 &&
+				map[pathLocation.z][pathLocation.y][pathLocation.x] == 3 &&
+				map[pathLocation.z][pathLocation.y][pathLocation.x] == 3 ){
+					map[pathLocation.z][pathLocation.y][pathLocation.x] == 2;
+					map[pathLocation.z][pathLocation.y][pathLocation.x] == 2;
+					map[pathLocation.z][pathLocation.y][pathLocation.x] == 2;
+			}
+		}
+		let pointsLength = possible.length;
+		while(true){
+			let choice = Math.floor(Math.random() * pointsLength);
+				for(i = 0; i < choice; i++){
+					if (map[possible[i].z][possible[i].y][possible[i].x] == 0){
+						map[possible[i].z][possible[i].y][possible[i].x] = 2;
+					}
+				}
+			map[possible[choice].z][possible[choice].y][possible[choice].x] = 1;
+			pathLocation = {z: possible[choice].z, y: possible[choice].y, x: possible[choice].x};
+			path.push(pathLocation);
+			//console.log(possible);
+				for(i = choice + 1; i < possible.length; i++){
+					//console.log(i);
+					if (map[possible[i].z][possible[i].y][possible[i].x] == 0){
+						map[possible[i].z][possible[i].y][possible[i].x] = 2;
+					}
+				}
+			break;
+		}
+		},
+		
+		nextStep2(){
+	    var possible = this.possiblePaths(pathLocation, true);
+		//console.log(possible);
+		while (possible.length > 0){
+			let pointsLength = possible.length;
+		while(true){
+			let choice = Math.floor(Math.random() * pointsLength);
+				for(i = 0; i < choice; i++){
+					if (map[possible[i].z][possible[i].y][possible[i].x] == 0){
+						map[possible[i].z][possible[i].y][possible[i].x] = 2;
+					}
+				}
+			map[possible[choice].z][possible[choice].y][possible[choice].x] = 1;
+			pathLocation = {z: possible[choice].z, y: possible[choice].y, x: possible[choice].x};
+			console.log(pathLocation);
+			possible = this.possiblePaths(pathLocation, false);
+			//console.log(possible);
+			path.push(pathLocation);
+				for(i = choice + 1; i < possible.length; i++){
+					//console.log(i);
+					if (map[possible[i].z][possible[i].y][possible[i].x] == 0){
+						map[possible[i].z][possible[i].y][possible[i].x] = 2;
+					}
+				}
+			break;
+			}
+		}
+		
+		},
+		
+		
+		
+	  possiblePaths(startSpot, newPath){
+	  var points = []
+		if(startSpot.z > 0){
+			let spot = { z: startSpot.z - 1, y: startSpot.y, x: startSpot.x};
+			points.push(spot);
+		}
+		if(startSpot.y > 0){
+			let spot = { z: startSpot.z, y: startSpot.y - 1, x: startSpot.x};
+			points.push(spot);
+		}
+		if(startSpot.x > 0){
+			let spot = { z: startSpot.z, y: startSpot.y, x: startSpot.x - 1};
+			points.push(spot);
+		}
+		if(startSpot.z < mapSize - 1){
+			let spot = { z: startSpot.z+ 1, y: startSpot.y, x: startSpot.x};
+			points.push(spot);
+		}
+		if(startSpot.y < mapSize - 1){
+			let spot = { z: startSpot.z, y: startSpot.y + 1, x: startSpot.x};
+			points.push(spot);
+		}
+		if(startSpot.x < mapSize - 1){
+			let spot = { z: startSpot.z, y: startSpot.y, x: startSpot.x + 1};
+			points.push(spot);
+		}
+		goodPoints = [];
+		for (i = 0; i < points.length; i++){
+			if (map[points[i].z][points[i].y][points[i].x] == 0){
+				goodPoints.push(points[i]);
+				}
+				else if (map[points[i].z][points[i].y][points[i].x] == 1){
+				}
+				else if (map[points[i].z][points[i].y][points[i].x] == 2){
+				this.cleanMap({z: points[i].z, y: points[i].y, x: points[i].x});
+				}
+			if (map[points[i].z][points[i].y][points[i].x] == 2 && newPath){
+				goodPoints.push(points[i]);
+			}
+		}
+		return goodPoints;
+	  },
+	  
+	  cleanMap(startSpot){
+		
+			var points = []
+			if(startSpot.z> 0){
+			let spot = { z: startSpot.z - 1, y: startSpot.y, x: startSpot.x};
+			points.push(spot);
+			}
+			if(startSpot.y > 0){
+			let spot = { z: startSpot.z, y: startSpot.y - 1, x: startSpot.x};
+			points.push(spot);
+			}
+			if(startSpot.x > 0){
+			let spot = { z: startSpot.z, y: startSpot.y, x: startSpot.x - 1};
+			points.push(spot);
+			}
+			if(startSpot.z< mapSize - 1){
+			let spot = { z: startSpot.z+ 1, y: startSpot.y, x: startSpot.x};
+			points.push(spot);
+			}
+			if(startSpot.y < mapSize - 1){
+			let spot = { z: startSpot.z, y: startSpot.y + 1, x: startSpot.x};
+			points.push(spot);
+			}
+			if(startSpot.x < mapSize - 1){
+			let spot = { z: startSpot.z, y: startSpot.y, x: startSpot.x + 1};
+			points.push(spot);
+			}
+			pathPoints = [];
+			for (num = 0; num < points.length; num++){
+			if (map[points[num].z][points[num].y][points[num].x] == 1){
+				pathPoints.push(points[num]);
+				}
+			}
+			if(pathPoints.length > 1){
+				map[startSpot.z][startSpot.y][startSpot.x] = 3;
+			}
+			},
+			
+			changeOrientation(right){
+				var i = 0;
+				while(directionMatrix[orientation.base][i] != orientation.forward){
+					i++
+				}
+				if (right){
+					orientation.forward = directionMatrix[orientation.base][i + 1];
+				} else {
+					if (i == 0) {i = 4;}
+					orientation.forward = directionMatrix[orientation.base][i - 1];
+				}
+			}
+			
+	 };
+    
+
+    var loadStateHandler = {
+      start() {
+        updateListeners.push(this);
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = RUN_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+    var titleStateHandler = {
+      start() {
+        updateListeners.push(this);
+		this.zoom = 100;
+		this.dir = 1;
+      },
+      eventPump(event) {
+        switch (event.name) {
+		  case "next":
+            state = LOAD_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+		  case "timer":
+			this.update();
+			break;
+        }
+      },
+	  update(){
+        this.canvas = document.getElementById("canv");
+        this.ctx = this.canvas.getContext("2d");
+        this.width = 640;
+        this.height = 640;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+		//if (this.zoom > 120 || this.zoom < 80) {this.dir *= -1;}
+		//this.zoom += this.dir;
+			
+        let ctx = this.ctx;
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, this.width, this.height);       
+
+
+		ctx.translate(this.width / 2, this.height / 2);
+                
+        ctx.scale(this.zoom, this.zoom);
+
+        ctx.fillStyle = "darkgreen";
+        ctx.fillRect(-4, 1, 10, 10)
+		ctx.fillStyle = "blue";
+        ctx.fillRect(-4, 1, 10, -10)
+		ctx.save()
+		{
+			ctx.fillStyle = "orange";
+			ctx.fillRect(-.5, 1 - .25 * mapSize, .25 *  mapSize, .25 * mapSize)
+			ctx.save()
+			{
+				ctx.translate(-.5,1);
+				ctx.fillStyle = "steelblue";
+				ctx.fillRect(.05, 0, .25, -.25)
+			}
+			ctx.restore()
+		}
+		//map Size Slider
+		ctx.fillStyle = "white";
+		ctx.fillRect(-1.5, 2, 3.5, .05)
+		for(slash = 0; slash < 6; slash++){
+			ctx.fillRect(-1.5 + .7 * slash, 1.85, .05, .35)
+		}
+		ctx.fillStyle = "red";
+		ctx.fillRect(-1.55 + .7 * (mapSize - 3), 1.95, .15, .15)
+		
+		
+        ctx.save()
+      }
+    };
+
+    var endStateHandler = {
+      start() {
+        updateListeners.push(this);
+		let resultMessage = document.getElementById("result");
+		if(win){
+			resultMessage.innerHTML = "You Won!";
+		} else {
+			resultMessage.innerHTML = "You died :(";
+		}
+      },
+      eventPump(event) {
+        switch (event.name) {
+          case "next":
+            state = TITLE_STATE;
+            updateListeners.splice(updateListeners.indexOf(this), 1);
+            updateStateHandler();
+            break;
+        }
+      }
+    };
+
+
+
+
+
+    updateStateHandler();
+
+    function updateStateHandler() {
+      if (state == TITLE_STATE) {
+        stateHandler = titleStateHandler;
+      } else if (state == LOAD_STATE) {
+        stateHandler = loadStateHandler;
+      } else if (state == RUN_STATE) {
+        stateHandler = runStateHandler;
+      } else if (state == END_STATE) {
+        stateHandler = endStateHandler;
+      }
+
+
+      updateView();
+      stateHandler.start();
+    }
+  </script>
+</body>
+
+</html>
