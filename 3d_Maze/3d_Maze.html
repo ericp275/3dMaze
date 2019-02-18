@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Model - World - Camera - Clipping - Screen</title>
+  <style>
+	h2 {
+		text-align: center;
+		width: 640px;
+	}
+    .screen {
+      width: 640px;
+      height: 640px;
+      color: black;
+      text-align: center;
+      line-height: 400px;
+    }
+  </style>
+</head>
+
+<body onload="main()" onkeyup="keyUp(event)">
+
+
+  <template id="runTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv"></canvas>
+    </div>
+	<h2 id = "floor"> Floor: 1</h2>
+    <div>
+      <button onclick="update({name:'next'})">New Game</button>
+	  <button onclick="update({name:'rotateL'})"><=</button>
+	  <button onclick="update({name:'step'})">Step</button>
+	  <button onclick="update({name:'rotate'})">=></button>
+	  <input type="range" min="1" max="6" value="4" oninput="changeQuality(event)" id = "gfxSlider">
+	  <label id = "energy"> Energy: 10</label>
+	  <label id = "health"> Health: 10</label>
+    </div>
+  </template>
+
+  <template id="loadTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv" onmouseup="mouseup(event)"></canvas>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="titleTemplate">
+    <div class="screen">
+      <canvas width="640" height="640" id="canv" onmouseup="mouseup(event)"></canvas>
+    </div>
+	<h2 id = "cubeSize"> Map Size: 4</h2>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <template id="endTemplate">
+    <div class="screen">
+      <div><h1 id="result">End Template</h1></div>
+    </div>
+    <div>
+      <button onclick="update({name:'next'})">Next</button>
+    </div>
+  </template>
+
+  <div id="templateHere"></div>
+  
+  <script src="./eventHandler.js"></script>
+  <script src="./titleStateHandler.js"></script>
+  <script src="./loadStateHandler.js"></script>
+  <script src="./runStateHandler.js"></script>
+  <script src="./endStateHandler.js"></script>
+
+  <script src="./updateStateHandler.js"></script>
+
+  <script>
+    //View Code
+
+    var titleTemplate, loadTemplate, runTemplate, endTemplate;
+    var templateHere;
+
+    function updateView() {
+      //Get initial values as needed
+      if (!titleTemplate)
+        titleTemplate = document.getElementById("titleTemplate");
+      if (!loadTemplate)
+        loadTemplate = document.getElementById("loadTemplate");
+      if (!runTemplate)
+        runTemplate = document.getElementById("runTemplate");
+      if (!endTemplate)
+        endTemplate = document.getElementById("endTemplate");
+      if (!templateHere)
+        templateHere = document.getElementById("templateHere");
+
+      var clone;
+      if (state == TITLE_STATE) {
+        clone = titleTemplate.content.cloneNode(true);
+      } else if (state == LOAD_STATE) {
+        var clone = loadTemplate.content.cloneNode(true);
+      } else if (state == RUN_STATE) {
+        var clone = runTemplate.content.cloneNode(true);
+      } else if (state == END_STATE) {
+        var clone = endTemplate.content.cloneNode(true);
+      } else {
+        return console.log("ERROR: Couldn't match state " + state);
+      }
+
+      templateHere.innerHTML = "";
+      templateHere.appendChild(clone);
+    }
+
+  </script>
+
+  <script>
+    //Controls
+
+    function main() {
+      setInterval(timer, 2000 / 20);
+      updateView();
+    }
+
+	var win = false;
+    
+
+  </script>
+
+
+
+
+  <script>
+    //Model code
+
+
+	
+    //A variable that has my state
+    //JS is dynamcially typed
+    var state;
+    var stateHandler;
+
+
+    //A set of states we can be in
+    var TITLE_STATE = 1;
+    var LOAD_STATE = 2;
+    var RUN_STATE = 3;
+    var END_STATE = 4;
+	var gfxQuality = 3;
+	var mapSize = 4;
+	var map = [];
+	var mapCopy = [];
+	var path = [];
+	var orientation = {forward: 2, base: 3}
+	
+	var pathLocation = {z: 0, y: 0, x: 0}
+	var player = {z: 0, y: 0, x: 0};
+	var playerOnMap = player;
+	
+	var directionMatrix = [];
+	directionMatrix.push([1,2,4,5,1]);
+	directionMatrix.push([0,5,3,2,0]);
+	directionMatrix.push([0,1,3,4,0]);
+	directionMatrix.push([2,1,5,4,2]);
+	directionMatrix.push([0,2,3,5,0]);
+	directionMatrix.push([0,4,3,1,0]);
+	
+	let floorColor = "#FF6306";
+	
+    //Set our intital state
+    state = TITLE_STATE;
+
+    
+    
+
+    
+
+    
+
+    
+
+
+
+
+
+    updateStateHandler();
+  </script>
+</body>
+
+</html>

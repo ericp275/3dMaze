@@ -1,0 +1,43 @@
+Starting title state handler
+loadStateHandler.js:50 {z: 0, y: 0, x: 1}
+loadStateHandler.js:50 {z: 0, y: 1, x: 1}
+loadStateHandler.js:50 {z: 0, y: 1, x: 2}
+loadStateHandler.js:50 {z: 1, y: 1, x: 2}
+loadStateHandler.js:50 {z: 1, y: 1, x: 3}
+loadStateHandler.js:50 {z: 1, y: 2, x: 3}
+loadStateHandler.js:50 {z: 2, y: 2, x: 3}
+loadStateHandler.js:50 {z: 2, y: 2, x: 2}
+loadStateHandler.js:50 {z: 2, y: 3, x: 2}
+loadStateHandler.js:50 {z: 2, y: 3, x: 1}
+loadStateHandler.js:50 {z: 2, y: 3, x: 0}
+loadStateHandler.js:50 {z: 1, y: 3, x: 0}
+loadStateHandler.js:50 {z: 0, y: 3, x: 0}
+loadStateHandler.js:50 {z: 0, y: 2, x: 0}
+4loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 3, y: 2, x: 2}
+loadStateHandler.js:50 {z: 3, y: 2, x: 1}
+loadStateHandler.js:50 {z: 3, y: 1, x: 1}
+loadStateHandler.js:50 {z: 3, y: 0, x: 1}
+loadStateHandler.js:50 {z: 3, y: 0, x: 2}
+loadStateHandler.js:50 {z: 3, y: 0, x: 3}
+loadStateHandler.js:50 {z: 3, y: 1, x: 3}
+2loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 3, y: 3, x: 0}
+loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 2, y: 0, x: 2}
+3loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 0, y: 3, x: 1}
+loadStateHandler.js:50 {z: 0, y: 3, x: 2}
+loadStateHandler.js:50 {z: 0, y: 3, x: 3}
+12loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 2, y: 2, x: 0}
+loadStateHandler.js:50 {z: 2, y: 1, x: 0}
+loadStateHandler.js:50 {z: 1, y: 1, x: 0}
+7loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 1, y: 0, x: 1}
+4loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 2, y: 0, x: 0}
+108loadStateHandler.js:64 new location:
+loadStateHandler.js:50 {z: 1, y: 0, x: 3}
+loadStateHandler.js:50 {z: 0, y: 0, x: 3}
+59941loadStateHandler.js:64 new location:
