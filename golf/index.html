@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+
+<head>
+  <title> Intro to Game Programming</title>
+</head>
+
+<body onload="main()" onkeydown="keydown(event)" onKeyUp="keyup(event)" style="background-color:lightgray">
+  <canvas width="640" height="640" id="canv" onmousedown="mousedown(event)" onmouseup="mouseup(event)"
+    onmousemove="mousemove(event)" onwheel="wheel(event)"></canvas>
+
+
+  <!-- Geometry -->
+  <script src="./geo/Geometry.js"></script>
+  <script src="./geo/Vector2.js"></script>
+  <script scr="./geo/Circle2.js"></script>
+  <script scr="./geo/CircleFile.js"></script>
+  <script src="./geo/A.js"></script>
+  <script src="./geo/AxisAlignedRectangle.js"></script>
+
+  <!-- Physics -->
+  <script src="./physics/Collider.js"></script>    
+
+  <!-- Components -->
+  <script src="./components/Component.js"></script>
+  <script src="./components/GeometryComponent.js"></script>
+  <script src="./components/CircleComponent.js"></script>
+  <script src="./components/AxisAlignedRectangleComponent.js"></script>
+  <script src="./components/RendererComponent.js"></script>
+  <script src="./components/GeometryRendererComponent.js"></script>
+  
+
+  <!-- Game Engine Code -->
+  <script src="./engine/Transform.js"></script>
+  <script src="./engine/GameObject.js"></script>
+
+
+  <!-- Behavior Scripts-->
+  <script src="./behaviors/Behavior.js"></script>
+  <script src="./behaviors/GoodSquareBehavior.js"></script>
+
+
+  <!-- Prefab GameObjects -->
+  <script src="./prefabs/Good.js"></script>
+  <script src="./prefabs/Bad.js"></script>
+
+
+
+  <script src="./eventHandler.js"></script>
+
+  <script src="./guiSupport.js"></script>
+
+  <!-- Scenes in our games -->
+  <script src="./scenes/titleStateHandler.js"></script>
+  <script src="./scenes/loadStateHandler.js"></script>
+  <script src="./scenes/runStateHandler.js"></script>
+  <script src="./scenes/endStateHandler.js"></script>
+
+  <script src="./updateStateHandler.js"></script>
+
+
+  <script>//Basic initialization code.
+
+    //Handle the scenes state machine
+
+    var state;        //State variable that tracks my current scene    
+
+    //A set of states we can be in, where each state represents a scene
+    var TITLE_STATE = 1;  //The opening scene, which displays the title of our game
+    var LOAD_STATE = 2;   //The load scene, which shows a loading progreess bar
+    var RUN_STATE = 3;    //The main scene, where the game runs
+    var END_STATE = 4;    //An end state, which the user sees which the game ends
+
+    //Set our intital scene state to the title state
+    state = RUN_STATE;
+
+    var Time = {}                                     //Stores information about time that is available to our game
+    var msBetweenFrames = 1000 / 30;                //Time in milliseconds between frames
+    Time.deltaTime = msBetweenFrames / 1000;        //Time in seconds between frames.
+
+    //Setup the canvas variables
+    var width = 640;
+    var height = 640;
+    var canvas = document.getElementById("canv");
+    var ctx = canvas.getContext("2d");
+
+    canvas.width = width;
+    canvas.height = height;
+
+    function main() {
+      updateStateHandler();                 //Load the current scene in our state machine
+      setInterval(timer, msBetweenFrames);  //Start the main timer to be called 30 times a second (every 33.3ms)
+    }
+  </script>
+</body>
+
+</html>
