@@ -1,0 +1,465 @@
+<!doctype html>
+<html>
+
+<head>
+  <title> Intro to Game Programming</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+
+    }
+
+    .goSelect{
+      margin:2px;
+      border:0;
+      width: 100%;
+      background-color:transparent;
+
+    }
+
+    .goSelect:hover{
+      background-color:#a2a2a2;
+    }
+    
+    .goSelect:focus{
+      background-color:#929292;
+      outline:0;
+    }
+
+    .sceneSelect{
+      border:5px;
+      border-color: red;
+      line-height:1.5rem;
+      border-radius: 10px;
+      background-color:transparent;
+      margin:10px;
+      height: 140px;
+      width: 140px;
+    }
+
+    .sceneSelect:hover{
+      background-color:transparent;
+    }
+
+    .sceneSelect:focus{
+      outline:0;
+      background-color:lightblue;
+    }
+
+
+    .stretchedMargin {
+      display: block;
+      position: absolute;
+      height: auto;
+      bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      margin-top: 50px;
+      margin-bottom: 200px;
+      margin-right: 500px;
+      margin-left: 200px;
+    }
+
+    .top {
+      display: block;
+      position: absolute;
+      height: 50px;
+      top: 0;
+      background-color: #a2a2a2;
+      width: 100%
+    }
+
+    .bottom {
+      display: block;
+      position: absolute;
+      height: 200px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: auto;
+      background-color: #a2a2a2;
+
+    }
+
+    .bottomContainer {
+      display: block;
+      position: absolute;
+      right: 0;
+      left: 0;
+      top: 10px;
+      bottom: 0;
+      background-color: #c2c2c2;
+      padding: 5px;
+    }
+
+    .left {
+      display: block;
+      position: absolute;
+      width: 200px;
+      left: 0;
+      height: auto;
+      top: 50px;
+      bottom: 200px;
+      background-color: #c2c2c2;
+    }
+
+    .header {
+      background-color: #e2e2e2;
+      
+    }
+
+    .componentHeader {
+      font-weight: bold;
+      text-overflow:ellipsis;
+      white-space: nowrap;
+      display:block;
+      overflow: hidden;
+      
+    }
+
+    .componentLeft {
+      text-overflow: ellipsis;
+      width:90px;
+      float:left;
+      white-space: nowrap;
+      display:block;
+      overflow: hidden;
+    }
+
+    .componentRight {
+      text-overflow: ellipsis;
+      width:90px;
+      white-space: nowrap;
+      display:block;
+      overflow: hidden;
+      background-color:#e2e2e2;
+    }
+    .componentDiv{
+      margin-top:3px;
+      margin-bottom:3px;
+    }
+
+    .innerContainer {
+      display: block;
+      position: absolute;
+      right: 0;
+      left: 0;
+      top: 10px;
+      bottom: 0;
+      background-color: #c2c2c2;
+      padding: 5px;
+    }
+
+    .right {
+      display: block;
+      position: absolute;
+      width: 200px;
+      right: 0;
+      top: 50px;
+      bottom: 200px;
+      height: auto;
+      background-color: #c2c2c2;
+    }
+
+    .sceneButton {
+      margin: 10px;
+    }
+  </style>
+  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+    integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <script src="live.js"></script>
+
+  <!-- Geometry -->
+  <script src="./geo/Geometry.js"></script>
+  <script src="./geo/Vector2.js"></script>
+  <script scr="./geo/Circle2.js"></script>
+  <script scr="./geo/CircleFile.js"></script>
+  <script src="./geo/Triangle.js"></script>
+  <script src="./geo/A.js"></script>
+  <script src="./geo/Line.js"></script>
+  <script src="./geo/AxisAlignedRectangle.js"></script>
+
+  <!-- Physics -->
+  <script src="./physics/Collider.js"></script>
+
+  <!-- Components -->
+  <script src="./components/Component.js"></script>
+  <script src="./components/GeometryComponent.js"></script>
+  <script src="./components/CircleComponent.js"></script>
+  <script src="./components/AxisAlignedRectangleComponent.js"></script>
+  <script src="./components/RendererComponent.js"></script>
+  <script src="./components/GeometryRendererComponent.js"></script>
+  <script src="./components/GUIRendererComponent.js"></script>
+  <script src="./components/GUIRectangleComponent.js"></script>
+  <script src="./components/GUITextComponent.js"></script>
+  <script src="./engine/CameraComponent.js"></script>
+  <script src="./components/Behavior.js"></script>
+
+
+  <!-- Game Engine Code -->
+  <script src="./engine/Transform.js"></script>
+  <script src="./engine/GameObject.js"></script>
+  <script src="./engine/Camera.js"></script>
+  <script src="./engine/Scene.js"></script>
+
+
+  <!-- Behavior Scripts-->
+  <script src="./behaviors/GoodSquareBehavior.js"></script>
+
+
+  <!-- Prefab GameObjects -->
+  <script src="./prefabs/Good.js"></script>
+  <script src="./prefabs/Bad.js"></script>
+  <script src="./prefabs/GUIContainer.js"></script>
+  <script src="./prefabs/GUITextObject.js"></script>
+
+
+
+  <script src="./eventHandler.js"></script>
+
+  <script src="./guiSupport.js"></script>
+
+  <!-- Scenes in our games -->
+  <script src="./scenes/TitleScene.js"></script>
+  <script src="./scenes/LoadScene.js"></script>
+  <script src="./scenes/RunScene.js"></script>
+  <script src="./scenes/EndScene.js"></script>
+</head>
+
+<body onload="main()" onkeydown="keydown(event)" onKeyUp="keyup(event)" style="background-color:lightgray"
+  onresize="resize(event)">
+  <div class="stretchedMargin" id="stretchy">
+    <canvas id="canv" onmousedown="mousedown(event)" onmouseup="mouseup(event)" onmousemove="mousemove(event)"
+      onwheel="wheel(event)">
+    </canvas>
+  </div>
+  <div id="app">
+    <div class="top">
+      <div style="background-color:#e2e2e2; margin:10px;"><i class="fa fa-bug" aria-hidden="true"></i> Debugging Inspector</div>
+    
+    </div>
+
+    <div class="right">
+      <div class="innerContainer">
+        <div class="header">
+          <div><i class="fa fa-info-circle" aria-hidden="true"></i> Inspector </div>
+        </div>
+
+        <div v-if="buildMode">
+          <div class="header">{{buildMode}}</div>
+          <hr>
+          <div class="componentHeader">Transform:</div>
+          <div class="componentDiv"><span class="componentLeft">Position</span><span class="componentRight">
+              {{10}}</span>
+          </div>
+          <div class="componentDiv">
+            <span class="componentLeft">Rotation</span><span class="componentRight"> {{1}}</span>
+          </div>
+          <div class="componentDiv"><span class="componentLeft">Scale</span><span class="componentRight"> {{0}}, {{0}}</span></div>
+          <hr>
+          <div v-for="component in components" class="componentDiv">
+            <div class="componentHeader">{{component.name}}</div>
+            <div v-for="exposed in component.exposed" class="componentDiv">
+              <span class="componentLeft">{{exposed}}</span><span class="componentRight"> {{component[exposed]}}</span>
+            </div>
+            <hr>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    <div class="left">
+      <div class="innerContainer">
+        <div class="header"><i class="fa fa-list" aria-hidden="true"></i> Hierarchy</div>
+        <div v-for="buildMode in buildModes">
+          <button class="goSelect" @click="selectGameObject(buildMode)">
+              {{buildMode}}
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="innerContainer">
+        <div class="header"><i class="fa fa-folder" aria-hidden="true"></i> Themes</div>
+        <div id="scenes">
+          <button class="sceneSelect" v-for="scene in scenes" @click="changeScene(scene)">
+              <i class="fa" aria-hidden="true" style="font-size:2rem;">PI</i><br/>{{scene.name}}
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  <script>//Basic initialization code.
+
+    //Handle the scenes state machine
+
+
+
+    function updateStateHandler(newState) {
+      if (!newState) {
+        if (state == TITLE_STATE) {
+          stateHandler = titleStateHandler;
+        } else if (state == LOAD_STATE) {
+          stateHandler = loadStateHandler;
+        } else if (state == RUN_STATE) {
+          stateHandler = runStateHandler;
+        } else if (state == END_STATE) {
+          stateHandler = endStateHandler;
+        }
+      }
+      else {
+        stateHandler = newState;
+      }
+
+
+
+      stateHandler.start();
+
+      app.updateStateHandlerView(stateHandler);
+
+    }
+
+    var state;        //State variable that tracks my current scene    
+
+    //A set of states we can be in, where each state represents a scene
+    var TITLE_STATE = 1;  //The opening scene, which displays the title of our game
+    var LOAD_STATE = 2;   //The load scene, which shows a loading progreess bar
+    var RUN_STATE = 3;    //The main scene, where the game runs
+    var END_STATE = 4;    //An end state, which the user sees which the game ends
+
+    //Set our intital scene state to the title state
+    state = RUN_STATE;
+
+    var Time = {}                                     //Stores information about time that is available to our game
+    var msBetweenFrames = 1000 / 30;                //Time in milliseconds between frames
+    Time.deltaTime = msBetweenFrames / 1000;        //Time in seconds between frames.
+
+    //Setup the canvas variables
+    var canvas = document.getElementById("canv");
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    var width = canvas.width;
+    var height = canvas.height;
+
+
+    var ctx = canvas.getContext("2d");
+    var buildmode = "Wall"
+
+    var runStateHandler = new RunScene();
+    var titleStateHandler = new TitleScene();
+    var endStateHandler = new EndScene();
+    var loadStateHandler = new LoadScene();
+
+    allScenes = [
+      titleStateHandler,
+      loadStateHandler,
+      runStateHandler,
+      endStateHandler
+    ];
+
+    function main() {
+
+      updateStateHandler();                 //Load the current scene in our state machine
+
+
+      setInterval(timer, msBetweenFrames);  //Start the main timer to be called 30 times a second (every 33.3ms)
+    }
+  </script>
+
+  <script src='https://code.jquery.com/jquery-3.2.1.min.js'></script>
+  <script src='https://unpkg.com/vue'></script>
+
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js'></script>
+
+  <script>
+
+
+    function updateStateHandlerView() {
+      console.log("Update State view handler function");
+      for (let i = 0; i < stateHandler.hierarchy.length; i++) {
+        $("#gameObjects").append("<p>" + stateHandler.hierarchy[i].name + "</p>");
+      }
+    }
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        scenes: [],
+        buildModes: ["Boundary","Wall","Obstacle","Ball","Hole"],
+        gameObjects: [],
+        components: [],
+        selectedScene: {},
+        buildMode: "Wall"
+
+      },
+      mounted() {
+        for (let i = 0; i < allScenes.length; i++) {
+          this.scenes.push(allScenes[i]);
+        }
+
+      },
+      methods: {
+        updateStateHandlerView(stateHandler) {
+          this.selectedScene = stateHandler;
+
+       
+
+          this.gameObjects = [];
+          this.components = [];
+
+
+          for (let i = 0; i < stateHandler.hierarchy.length; i++) {
+            this.gameObjects.push(stateHandler.hierarchy[i]);
+          }
+
+        },
+        changeScene(scene) {
+          updateStateHandler(scene);
+        },
+        selectGameObject(buildMode) {
+          console.log(buildMode);
+          update({name:"changeMode", buildMode: buildMode});
+        }
+      },
+    });
+    /*
+      case "mousedown":
+      console.log("click");
+        var canvas = document.getElementById("stretchy");
+        canvas.style.margin = "0px";
+        var canvas = document.getElementById("app");
+        canvas.style.visibility = "hidden";
+        break;
+      
+      case "changeMode":
+        buildmode = event.buildMode;
+        console.log("now building " + buildmode);
+        break;
+        */
+
+
+  </script>
+
+
+
+</body>
+
+</html>
